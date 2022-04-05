@@ -2,6 +2,7 @@
 clc
 clear all
 close all
+cd 01_MpcDeisgn_MassSpringSystem
 %% Model Define- Idealiza model which can not obtain in real world
 % parameter
 m1 = 1;
@@ -29,7 +30,10 @@ Continuous_Plant_Model.InputName = {'u1', 'u2'};
 Continuous_Plant_Model.InputUnit = {'N', 'N'};
 Continuous_Plant_Model.OutputName = {'y1', 'y2'};
 Continuous_Plant_Model.OutputUnit = {'m', 'm'};
-save Continuous_Plant_Model
+
+if ~exist('Continuous_Plant_Model.mat', 'file')
+    save Continuous_Plant_Model
+end
 %% Model Simulation
 open_system('MechanicalMassSpringContinousTime');
 sim('MechanicalMassSpringContinousTime');
@@ -103,33 +107,41 @@ plot(0:stp_sz:stp_sz*(length(Y_2)-1), Y_2, '--r', 'LineWidth', 2);
 legend('y2 measured', 'y2 System Identification');
 title(['System ID Order ' num2str(SystemOrder)]);
 xlabel('Time [s]');
-save Continuous_Plant_Id_Model sys2
 
+if ~exist('Continuous_Plant_Id_Model.mat', 'file')
+    save Continuous_Plant_Id_Model sys2
+end
 %% Mpc with real Plant
-open_system('MassSpringMPC');
-sim('MassSpringMPC');
+if ~exist('MPC_1.mat', 'file')
+    SystemName = 'MassSpringMPC_1';
+    open_system(SystemName);
+    sim(SystemName);
+    close_system(SystemName);
+end
+load MPC_1;
+figure
+% Input u1
+strName = 'MPC1 ';
+subplot(221);
+plot(MPC1.u1.Time, MPC1.u1.Data);
+title([strName ' Control Variable u1']);
+xlabel('Time [s]');
+% Input u2
+subplot(222);
+plot(MPC1.u2.Time, MPC1.u2.Data);
+title([strName ' Control Variable u2']);
+xlabel('Time [s]');
+% Output y1
+subplot(223);
+plot(MPC1.y1.Time, MPC1.y1.Data(:, 1), 'b-', MPC1.y1.Time, MPC1.y1.Data(:, 2), 'r--');  
+title([strName ' Output y1']);
+legend('Reference from model', 'Measured');
+xlabel('Time [s]');
+% Output y2
+subplot(224);
+plot(MPC1.y2.Time, MPC1.y2.Data(:, 1), 'b-', MPC1.y2.Time, MPC1.y2.Data(:, 2), 'r--');
+title([strName ' Output y2']);
+legend('Reference from model', 'Measured');
+xlabel('Time [s]');
 
-subplot(221)
-plot(u1_mpc(:,1), u1_mpc(:, 2), 'linewidth', 2);
-xlabel('Time [s]');
-legend('u1');
-grid on;
-subplot(222)
-plot(u2_mpc(:,1), u2_mpc(:, 2), 'linewidth', 2);
-xlabel('Time [s]');
-legend('u2');
-grid on;
-subplot(223)
-plot(y1_ref(:, 1), y1_ref(:, 2), 'linewidth', 2);
-hold on
-plot(y1_feb(:, 1), y1_feb(:, 2), 'linewidth', 2);
-xlabel('Time [s]');
-legend('y1');
-grid on;
-subplot(224)
-plot(y2_ref(:, 1), y2_ref(:, 2), 'linewidth', 2);
-hold on
-plot(y2_feb(:, 1), y2_feb(:, 2), 'linewidth', 2);
-xlabel('Time [s]');
-legend('y2');
-grid on;
+cd ..\
